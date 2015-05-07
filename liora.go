@@ -211,7 +211,7 @@ func main() {
     for _, f := range files { 
             pwd, err := os.Getwd()
             check(err)
-            fPath := pwd + "\\" + f.Name()
+            fPath := pwd + "/" + f.Name()
             
             isELF := CheckELF(fPath)
             if isELF == true  { 
