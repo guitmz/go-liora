@@ -197,7 +197,7 @@ func Rnd(n int) string {
 
 func GetSz(file string) int64 {
 
-    myHnd, err := os.Open(os.Args[0])
+    myHnd, err := os.Open(file)
     check(err)
     defer myHnd.Close()
     myStat, err := myHnd.Stat()
