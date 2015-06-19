@@ -13,7 +13,7 @@
 *
 * Use at your own risk, I'm not responsible for any damages that this may cause.
 *
-* A big shout for those who keeps the scene alive: herm1t, alcopaul, hh86, boojum, R3s1stanc3 and many others :)
+* A shout for those who keeps the scene alive: herm1t, alcopaul, hh86, SPTH, genetix, R3s1stanc3 & others
 *
 * Feel free to email me: tmz@null.net || You can also find me at http://vxheaven.org/ and on Twitter @TMZvx
 * 
