@@ -78,7 +78,7 @@ func CheckPE(file string) bool {
 }
 
 func CheckInfected(file string) bool {
-	
+	//a method by genetix, very handy
 	_mark := "=TMZ=" //infection mark
  	fi, err := os.Open(file)
 	check(err)
